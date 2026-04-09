@@ -1,0 +1,29 @@
+{
+  "name": "@workspace/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "push": "node ./drizzle-run.cjs push --config ./drizzle.config.ts",
+    "push-force": "node ./drizzle-run.cjs push --force --config ./drizzle.config.ts",
+    "generate": "node ./drizzle-run.cjs generate --config ./drizzle.config.ts",
+    "migrate": "node ./drizzle-run.cjs migrate --config ./drizzle.config.ts",
+    "studio": "node ./drizzle-run.cjs studio --config ./drizzle.config.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "catalog:",
+    "drizzle-zod": "^0.8.3",
+    "pg": "^8.20.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/pg": "^8.18.0",
+    "drizzle-kit": "^0.31.9"
+  }
+}

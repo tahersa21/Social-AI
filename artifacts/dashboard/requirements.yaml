@@ -1,0 +1,20 @@
+packages:
+  "framer-motion": "Animations and page transitions for a premium feel"
+  "date-fns": "Date formatting with Arabic locale support"
+  "lucide-react": "Icons for the dashboard"
+  "react-dropzone": "Drag and drop image uploads for products"
+  "react-hook-form": "Form state management"
+  "@hookform/resolvers": "Zod resolvers for forms"
+  "zod": "Schema validation for forms"
+  "clsx": "Utility for constructing className strings"
+  "tailwind-merge": "Utility for merging tailwind classes safely"
+
+images:
+  - path: "artifacts/dashboard/public/images/empty-state.png"
+    description: "Clean, abstract, modern geometric illustration representing an empty state or no data, light blue and white color palette, minimal professional style"
+    aspect_ratio: "1:1"
+
+notes:
+  - All standard UI components are assumed to exist in src/components/ui/
+  - The app enforces RTL direction for the Arabic language layout.
+  - Orval-generated hooks from @workspace/api-client-react are utilized.

@@ -1,0 +1,2779 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.2.0
+  description: Facebook AI Agent API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: providers
+    description: AI provider management
+  - name: ai-config
+    description: AI configuration and bot persona
+  - name: products
+    description: Product catalog management
+  - name: orders
+    description: Order management
+  - name: conversations
+    description: Messenger conversation log
+  - name: comments
+    description: Facebook comment log
+  - name: fb-settings
+    description: Facebook page connection settings
+  - name: webhook
+    description: Facebook webhook endpoint
+  - name: stats
+    description: Dashboard analytics
+  - name: appointments
+    description: Appointment management
+  - name: slots
+    description: Available time slot management
+  - name: faqs
+    description: FAQ / Knowledge base
+  - name: broadcasts
+    description: Broadcast messages to active users
+  - name: leads
+    description: Lead and contact capture
+  - name: subscription
+    description: Subscription plans and usage
+  - name: domain-templates
+    description: Domain-specific bot templates
+  - name: notifications
+    description: Real-time SSE notifications
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ── Auth ──────────────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+
+  # ── Stats ─────────────────────────────────────────────────────────────────
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get dashboard analytics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  # ── AI Providers ──────────────────────────────────────────────────────────
+  /providers:
+    get:
+      operationId: listProviders
+      tags: [providers]
+      summary: List all AI providers
+      responses:
+        "200":
+          description: List of providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Provider"
+    post:
+      operationId: createProvider
+      tags: [providers]
+      summary: Create a new AI provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProviderInput"
+      responses:
+        "201":
+          description: Created provider
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+
+  /providers/{id}:
+    put:
+      operationId: updateProvider
+      tags: [providers]
+      summary: Update an AI provider
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProviderInput"
+      responses:
+        "200":
+          description: Updated provider
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+    delete:
+      operationId: deleteProvider
+      tags: [providers]
+      summary: Delete an AI provider
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /providers/{id}/activate:
+    post:
+      operationId: activateProvider
+      tags: [providers]
+      summary: Set a provider as the active one
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /providers/{id}/test:
+    post:
+      operationId: testProvider
+      tags: [providers]
+      summary: Test an AI provider connection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderTestResult"
+
+  /providers/stats:
+    get:
+      operationId: getProviderStats
+      tags: [providers]
+      summary: Get provider usage stats (last 24 hours)
+      responses:
+        "200":
+          description: Provider performance stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProviderStat"
+
+  # ── Notifications ─────────────────────────────────────────────────────────
+  /notifications/stream:
+    get:
+      operationId: getNotificationStream
+      tags: [notifications]
+      summary: SSE stream for real-time notifications (auth via token query param)
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: JWT auth token
+      responses:
+        "200":
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  # ── AI Config ──────────────────────────────────────────────────────────────
+  /ai-config:
+    get:
+      operationId: getAiConfig
+      tags: [ai-config]
+      summary: Get AI configuration
+      responses:
+        "200":
+          description: AI configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiConfig"
+    put:
+      operationId: updateAiConfig
+      tags: [ai-config]
+      summary: Update AI configuration (supports multipart for logo upload)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UpdateAiConfigInput"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAiConfigInput"
+      responses:
+        "200":
+          description: Updated config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiConfig"
+
+  # ── Products ───────────────────────────────────────────────────────────────
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List all products
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a new product (multipart with up to 5 images)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateProductInput"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    put:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UpdateProductInput"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    delete:
+      operationId: deleteProduct
+      tags: [products]
+      summary: Delete a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /products/{id}/stock:
+    patch:
+      operationId: adjustProductStock
+      tags: [products]
+      summary: Adjust product stock quantity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockAdjustInput"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  # ── Orders ─────────────────────────────────────────────────────────────────
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List orders (optional status filter)
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, confirmed, cancelled, delivered]
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+  /orders/count:
+    get:
+      operationId: getOrderCount
+      tags: [orders]
+      summary: Get pending and total order counts
+      responses:
+        "200":
+          description: Order counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderCount"
+
+  /orders/bulk-delete:
+    post:
+      operationId: bulkDeleteOrders
+      tags: [orders]
+      summary: Delete multiple orders at once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkDeleteInput"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkDeleteResult"
+
+  /orders/{id}:
+    patch:
+      operationId: updateOrderStatus
+      tags: [orders]
+      summary: Update order status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderStatusInput"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+    delete:
+      operationId: deleteOrder
+      tags: [orders]
+      summary: Delete an order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # ── Conversations ──────────────────────────────────────────────────────────
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List all conversation users (latest message per user)
+      responses:
+        "200":
+          description: List of conversation summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConversationSummary"
+
+  /conversations/{fbUserId}:
+    get:
+      operationId: getConversation
+      tags: [conversations]
+      summary: Get full conversation with a user
+      parameters:
+        - name: fbUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Conversation messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConversationMessage"
+
+  /conversations/{fbUserId}/pause:
+    patch:
+      operationId: pauseConversation
+      tags: [conversations]
+      summary: Pause AI for a conversation
+      parameters:
+        - name: fbUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: AI paused
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PauseResponse"
+
+  /conversations/{fbUserId}/resume:
+    patch:
+      operationId: resumeConversation
+      tags: [conversations]
+      summary: Resume AI for a conversation
+      parameters:
+        - name: fbUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: AI resumed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PauseResponse"
+
+  /conversations/{fbUserId}/label:
+    patch:
+      operationId: setConversationLabel
+      tags: [conversations]
+      summary: Set label for a conversation
+      parameters:
+        - name: fbUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetLabelInput"
+      responses:
+        "200":
+          description: Label updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /conversations/{fbUserId}/sentiment:
+    patch:
+      operationId: setConversationSentiment
+      tags: [conversations]
+      summary: Set sentiment for a conversation
+      parameters:
+        - name: fbUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetSentimentInput"
+      responses:
+        "200":
+          description: Sentiment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /conversations/{fbUserId}/reply:
+    post:
+      operationId: replyToConversation
+      tags: [conversations]
+      summary: Send admin reply to a conversation via Facebook Messenger
+      parameters:
+        - name: fbUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplyInput"
+      responses:
+        "200":
+          description: Reply sent and saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationMessage"
+
+  /conversations/paused-count:
+    get:
+      operationId: getPausedConversationCount
+      tags: [conversations]
+      summary: Get count of paused conversations
+      responses:
+        "200":
+          description: Paused conversation count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PausedCount"
+
+  # ── Comments ───────────────────────────────────────────────────────────────
+  /comments:
+    get:
+      operationId: listComments
+      tags: [comments]
+      summary: List comment interactions (paginated)
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of comment log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommentLog"
+
+  /comments/stats:
+    get:
+      operationId: getCommentStats
+      tags: [comments]
+      summary: Get comment statistics
+      responses:
+        "200":
+          description: Comment stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentStats"
+
+  # ── FB Settings ────────────────────────────────────────────────────────────
+  /fb-settings:
+    get:
+      operationId: getFbSettings
+      tags: [fb-settings]
+      summary: Get Facebook page settings
+      responses:
+        "200":
+          description: Facebook settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FbSettings"
+    post:
+      operationId: saveFbSettings
+      tags: [fb-settings]
+      summary: Save Facebook page settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveFbSettingsInput"
+      responses:
+        "200":
+          description: Saved settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FbSettings"
+
+  /fb-settings/test:
+    get:
+      operationId: testFbConnection
+      tags: [fb-settings]
+      summary: Test Facebook connection
+      responses:
+        "200":
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FbTestResult"
+
+  # ── Webhook ────────────────────────────────────────────────────────────────
+  /webhook:
+    get:
+      operationId: verifyWebhook
+      tags: [webhook]
+      summary: Verify Facebook webhook
+      parameters:
+        - name: hub.mode
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: hub.verify_token
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: hub.challenge
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Challenge value returned on success
+          content:
+            text/plain:
+              schema:
+                type: string
+    post:
+      operationId: handleWebhook
+      tags: [webhook]
+      summary: Handle incoming Facebook webhook events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Event received
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # ── Appointments ───────────────────────────────────────────────────────────
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [appointments]
+      summary: List appointments
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+
+  /appointments/count:
+    get:
+      operationId: getAppointmentCount
+      tags: [appointments]
+      summary: Get pending appointment count
+      responses:
+        "200":
+          description: Appointment count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentCount"
+
+  /appointments/{id}:
+    patch:
+      operationId: updateAppointment
+      tags: [appointments]
+      summary: Update appointment status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAppointmentInput"
+      responses:
+        "200":
+          description: Updated appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+    delete:
+      operationId: deleteAppointment
+      tags: [appointments]
+      summary: Delete appointment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # ── Slots ──────────────────────────────────────────────────────────────────
+  /slots:
+    get:
+      operationId: listSlots
+      tags: [slots]
+      summary: List all time slots
+      responses:
+        "200":
+          description: List of slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailableSlot"
+    post:
+      operationId: createSlot
+      tags: [slots]
+      summary: Create a new time slot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSlotInput"
+      responses:
+        "201":
+          description: Created slot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailableSlot"
+
+  /slots/{id}:
+    patch:
+      operationId: updateSlot
+      tags: [slots]
+      summary: Update a slot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSlotInput"
+      responses:
+        "200":
+          description: Updated slot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailableSlot"
+    delete:
+      operationId: deleteSlot
+      tags: [slots]
+      summary: Delete a slot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /slots/available:
+    get:
+      operationId: getAvailableSlots
+      tags: [slots]
+      summary: Get available slots for a date
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Available slots with booking capacity info
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: "#/components/schemas/AvailableSlot"
+                    - type: object
+                      properties:
+                        currentBookings:
+                          type: integer
+                        remainingCapacity:
+                          type: integer
+
+  # ── FAQs ───────────────────────────────────────────────────────────────────
+  /faqs:
+    get:
+      operationId: listFaqs
+      tags: [faqs]
+      summary: List all FAQs
+      responses:
+        "200":
+          description: List of FAQs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Faq"
+    post:
+      operationId: createFaq
+      tags: [faqs]
+      summary: Create a FAQ
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFaqInput"
+      responses:
+        "201":
+          description: Created FAQ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Faq"
+
+  /faqs/{id}:
+    put:
+      operationId: updateFaq
+      tags: [faqs]
+      summary: Update a FAQ
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFaqInput"
+      responses:
+        "200":
+          description: Updated FAQ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Faq"
+    delete:
+      operationId: deleteFaq
+      tags: [faqs]
+      summary: Delete a FAQ
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # ── Broadcasts ────────────────────────────────────────────────────────────
+  /broadcasts:
+    get:
+      operationId: listBroadcasts
+      tags: [broadcasts]
+      summary: List all broadcasts
+      responses:
+        "200":
+          description: List of broadcasts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Broadcast"
+    post:
+      operationId: createBroadcast
+      tags: [broadcasts]
+      summary: Create a new broadcast
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBroadcastInput"
+      responses:
+        "201":
+          description: Created broadcast
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Broadcast"
+
+  /broadcasts/{id}:
+    patch:
+      operationId: updateBroadcast
+      tags: [broadcasts]
+      summary: Update a broadcast (title, message, filter, schedule)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBroadcastInput"
+      responses:
+        "200":
+          description: Updated broadcast
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Broadcast"
+    delete:
+      operationId: deleteBroadcast
+      tags: [broadcasts]
+      summary: Delete a broadcast
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /broadcasts/{id}/send:
+    post:
+      operationId: sendBroadcast
+      tags: [broadcasts]
+      summary: Send a broadcast to active users (within 24h window)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Broadcast sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendBroadcastResult"
+
+  /broadcasts/{id}/stats:
+    get:
+      operationId: getBroadcastStats
+      tags: [broadcasts]
+      summary: Get delivery stats for a broadcast
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Broadcast delivery stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BroadcastStats"
+
+  # ── Leads ─────────────────────────────────────────────────────────────────
+  /leads:
+    get:
+      operationId: listLeads
+      tags: [leads]
+      summary: List all captured leads
+      parameters:
+        - name: label
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter leads by label
+      responses:
+        "200":
+          description: List of leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lead"
+    post:
+      operationId: createLead
+      tags: [leads]
+      summary: Manually create a lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLeadInput"
+      responses:
+        "201":
+          description: Created lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+
+  /leads/export:
+    get:
+      operationId: exportLeads
+      tags: [leads]
+      summary: Export leads as CSV (with UTF-8 BOM)
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /leads/{id}:
+    put:
+      operationId: updateLead
+      tags: [leads]
+      summary: Update a lead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLeadInput"
+      responses:
+        "200":
+          description: Updated lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+    delete:
+      operationId: deleteLead
+      tags: [leads]
+      summary: Delete a lead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # ── Subscription ──────────────────────────────────────────────────────────
+  /subscription:
+    get:
+      operationId: getSubscription
+      tags: [subscription]
+      summary: Get current plan and usage (V3 canonical)
+      responses:
+        "200":
+          description: Current subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentSubscription"
+
+  /subscription/plans:
+    get:
+      operationId: getSubscriptionPlans
+      tags: [subscription]
+      summary: List all subscription plans (V3 canonical)
+      responses:
+        "200":
+          description: List of plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubscriptionPlan"
+
+  /subscription/upgrade:
+    post:
+      operationId: upgradeSubscription
+      tags: [subscription]
+      summary: Upgrade to a new subscription plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSubscriptionPlanInput"
+      responses:
+        "200":
+          description: Plan upgraded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpgradePlanResponse"
+
+  /subscription-plans:
+    get:
+      operationId: listSubscriptionPlans
+      tags: [subscription]
+      summary: List all subscription plans
+      responses:
+        "200":
+          description: List of plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubscriptionPlan"
+
+  /subscription/current:
+    get:
+      operationId: getCurrentSubscription
+      tags: [subscription]
+      summary: Get current plan and usage
+      responses:
+        "200":
+          description: Current subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentSubscription"
+
+  /subscription/usage:
+    get:
+      operationId: getSubscriptionUsage
+      tags: [subscription]
+      summary: Get current month usage
+      responses:
+        "200":
+          description: Usage data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionUsage"
+
+  /subscription/plan:
+    put:
+      operationId: updateSubscriptionPlan
+      tags: [subscription]
+      summary: Update current subscription plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSubscriptionPlanInput"
+      responses:
+        "200":
+          description: Plan updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpgradePlanResponse"
+
+  # ── Domain Templates ──────────────────────────────────────────────────────
+  /domain-templates:
+    get:
+      operationId: listDomainTemplates
+      tags: [domain-templates]
+      summary: List all domain templates
+      responses:
+        "200":
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DomainTemplate"
+
+  /domain-templates/{domain}:
+    get:
+      operationId: getDomainTemplate
+      tags: [domain-templates]
+      summary: Get a single domain template
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Domain template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainTemplate"
+
+  /domain-templates/{domain}/apply:
+    post:
+      operationId: applyDomainTemplate
+      tags: [domain-templates]
+      summary: Apply a domain template to AI config, FAQs and products
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Template applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplyTemplateResult"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    # ── Auth ────────────────────────────────────────────────────────────────
+    LoginInput:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthUser"
+      required: [token, user]
+
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+      required: [id, username]
+
+    # ── Stats ──────────────────────────────────────────────────────────────
+    DashboardStats:
+      type: object
+      properties:
+        sessions:
+          type: object
+          properties:
+            today:
+              type: integer
+            week:
+              type: integer
+            month:
+              type: integer
+        orders:
+          type: object
+          properties:
+            total:
+              type: integer
+            pending:
+              type: integer
+        appointments:
+          type: object
+          properties:
+            total:
+              type: integer
+            pending:
+              type: integer
+        comments:
+          type: object
+          properties:
+            today:
+              type: integer
+        revenue:
+          type: object
+          properties:
+            today:
+              type: number
+            currency:
+              type: string
+        subscription:
+          type: object
+          properties:
+            sessionsUsed:
+              type: integer
+            sessionsLimit:
+              type: integer
+            percentage:
+              type: integer
+            resetsOn:
+              type: string
+        peakHours:
+          type: array
+          items:
+            type: object
+            properties:
+              hour:
+                type: integer
+              count:
+                type: integer
+        topProducts:
+          type: array
+          items:
+            type: object
+            properties:
+              productName:
+                type: string
+              orderCount:
+                type: integer
+        sentiment:
+          type: object
+          properties:
+            positive:
+              type: integer
+            neutral:
+              type: integer
+            negative:
+              type: integer
+        trust:
+          type: object
+          properties:
+            conversionRate:
+              type: integer
+            botOrders:
+              type: integer
+            errorsPrevented:
+              type: integer
+            humanInterventions:
+              type: integer
+
+    # ── Provider ──────────────────────────────────────────────────────────────
+    Provider:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        providerType:
+          type: string
+        apiKey:
+          type: string
+          description: Masked key (never returned in full)
+        baseUrl:
+          type: string
+          nullable: true
+        modelName:
+          type: string
+        isActive:
+          type: integer
+        priority:
+          type: integer
+          description: Round-robin priority (lower = higher priority)
+        isEnabled:
+          type: integer
+          description: Whether provider participates in load balancing (0 or 1)
+        failCount:
+          type: integer
+          description: Consecutive failure count (resets on success)
+        lastUsedAt:
+          type: string
+          nullable: true
+          description: ISO timestamp of last use
+        createdAt:
+          type: string
+      required: [id, name, providerType, modelName, isActive]
+
+    CreateProviderInput:
+      type: object
+      properties:
+        name:
+          type: string
+        providerType:
+          type: string
+        apiKey:
+          type: string
+        baseUrl:
+          type: string
+          nullable: true
+        modelName:
+          type: string
+      required: [name, providerType, apiKey, modelName]
+
+    UpdateProviderInput:
+      type: object
+      properties:
+        name:
+          type: string
+        providerType:
+          type: string
+        apiKey:
+          type: string
+        baseUrl:
+          type: string
+          nullable: true
+        modelName:
+          type: string
+        priority:
+          type: integer
+        isEnabled:
+          type: integer
+
+    ProviderTestResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        response:
+          type: string
+        latencyMs:
+          type: integer
+      required: [success]
+
+    ProviderStat:
+      type: object
+      properties:
+        providerId:
+          type: integer
+        providerName:
+          type: string
+        totalCalls:
+          type: integer
+        successCount:
+          type: integer
+        successRate:
+          type: integer
+          description: Success percentage (0-100)
+        avgLatencyMs:
+          type: integer
+      required: [providerId, providerName, totalCalls, successCount, successRate, avgLatencyMs]
+
+    # ── AI Config ─────────────────────────────────────────────────────────────
+    AiConfig:
+      type: object
+      properties:
+        id:
+          type: integer
+        botName:
+          type: string
+        personality:
+          type: string
+          nullable: true
+        greetingMessage:
+          type: string
+          nullable: true
+        language:
+          type: string
+        respondToOrders:
+          type: integer
+        replyToComments:
+          type: integer
+        sendDmOnComment:
+          type: integer
+        activeProviderId:
+          type: integer
+          nullable: true
+        businessCountry:
+          type: string
+          nullable: true
+        businessCity:
+          type: string
+          nullable: true
+        businessDomain:
+          type: string
+          nullable: true
+        businessDomainCustom:
+          type: string
+          nullable: true
+        targetAudience:
+          type: string
+          nullable: true
+        businessHoursStart:
+          type: string
+          nullable: true
+        businessHoursEnd:
+          type: string
+          nullable: true
+        outsideHoursMessage:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        pageName:
+          type: string
+          nullable: true
+        pageDescription:
+          type: string
+          nullable: true
+        pageLogoUrl:
+          type: string
+          nullable: true
+        pageFacebookUrl:
+          type: string
+          nullable: true
+        strictTopicMode:
+          type: integer
+        offTopicResponse:
+          type: string
+          nullable: true
+        blockedKeywords:
+          type: string
+          nullable: true
+        maxOffTopicMessages:
+          type: integer
+        handoffKeyword:
+          type: string
+          nullable: true
+        handoffMessage:
+          type: string
+          nullable: true
+        currentPlan:
+          type: string
+        leadCaptureEnabled:
+          type: integer
+        leadCaptureFields:
+          type: string
+        leadCaptureMessage:
+          type: string
+          nullable: true
+        useQuickReplies:
+          type: integer
+        workingHoursEnabled:
+          type: integer
+        abandonedCartEnabled:
+          type: integer
+        abandonedCartDelayHours:
+          type: integer
+          description: Delay in hours before sending abandoned cart reminder (1-24)
+        abandonedCartMessage:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+        botEnabled:
+          type: integer
+        botDisabledMessage:
+          type: string
+          nullable: true
+        confidenceThreshold:
+          type: string
+        confidenceBelowAction:
+          type: string
+        safeModeEnabled:
+          type: integer
+        safeModeLevel:
+          type: string
+        customerMemoryEnabled:
+          type: integer
+        salesBoostEnabled:
+          type: integer
+        salesBoostLevel:
+          type: string
+        priceLockEnabled:
+          type: integer
+        humanGuaranteeEnabled:
+          type: integer
+        smartEscalationEnabled:
+          type: integer
+        quickReplyButtons:
+          type: string
+          nullable: true
+        appointmentsEnabled:
+          type: integer
+        updatedAt:
+          type: string
+          nullable: true
+      required: [id, botName, language, respondToOrders, replyToComments, sendDmOnComment, currency, strictTopicMode, maxOffTopicMessages, currentPlan, leadCaptureEnabled, leadCaptureFields, useQuickReplies, workingHoursEnabled, abandonedCartEnabled, abandonedCartDelayHours, timezone, botEnabled, confidenceThreshold, confidenceBelowAction, safeModeEnabled, safeModeLevel, customerMemoryEnabled, salesBoostEnabled, salesBoostLevel, priceLockEnabled, humanGuaranteeEnabled, smartEscalationEnabled, appointmentsEnabled]
+
+    UpdateAiConfigInput:
+      type: object
+      properties:
+        botName:
+          type: string
+        personality:
+          type: string
+          nullable: true
+        greetingMessage:
+          type: string
+          nullable: true
+        language:
+          type: string
+        respondToOrders:
+          type: integer
+        replyToComments:
+          type: integer
+        sendDmOnComment:
+          type: integer
+        activeProviderId:
+          type: integer
+          nullable: true
+        businessCountry:
+          type: string
+          nullable: true
+        businessCity:
+          type: string
+          nullable: true
+        businessDomain:
+          type: string
+          nullable: true
+        businessDomainCustom:
+          type: string
+          nullable: true
+        targetAudience:
+          type: string
+          nullable: true
+        businessHoursStart:
+          type: string
+          nullable: true
+        businessHoursEnd:
+          type: string
+          nullable: true
+        outsideHoursMessage:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        pageName:
+          type: string
+          nullable: true
+        pageDescription:
+          type: string
+          nullable: true
+        pageLogoUrl:
+          type: string
+          nullable: true
+        pageFacebookUrl:
+          type: string
+          nullable: true
+        pageLogo:
+          type: string
+          format: binary
+        strictTopicMode:
+          type: integer
+        offTopicResponse:
+          type: string
+          nullable: true
+        blockedKeywords:
+          type: string
+          nullable: true
+        maxOffTopicMessages:
+          type: integer
+        handoffKeyword:
+          type: string
+          nullable: true
+        handoffMessage:
+          type: string
+          nullable: true
+        currentPlan:
+          type: string
+        leadCaptureEnabled:
+          type: integer
+        leadCaptureFields:
+          type: string
+        leadCaptureMessage:
+          type: string
+          nullable: true
+        useQuickReplies:
+          type: integer
+        workingHoursEnabled:
+          type: integer
+        abandonedCartEnabled:
+          type: integer
+        abandonedCartDelayHours:
+          type: integer
+          description: Delay in hours before sending abandoned cart reminder (1-24)
+        abandonedCartMessage:
+          type: string
+          nullable: true
+        botEnabled:
+          type: integer
+        botDisabledMessage:
+          type: string
+          nullable: true
+        salesBoostEnabled:
+          type: integer
+        salesBoostLevel:
+          type: string
+          nullable: true
+        priceLockEnabled:
+          type: integer
+        humanGuaranteeEnabled:
+          type: integer
+        smartEscalationEnabled:
+          type: integer
+        appointmentsEnabled:
+          type: integer
+          description: Enable or disable appointment booking (1=enabled, 0=disabled)
+        timezone:
+          type: string
+        confidenceThreshold:
+          type: string
+        confidenceBelowAction:
+          type: string
+        safeModeEnabled:
+          type: integer
+        safeModeLevel:
+          type: string
+        customerMemoryEnabled:
+          type: integer
+        quickReplyButtons:
+          type: string
+          nullable: true
+
+    # ── Product ───────────────────────────────────────────────────────────────
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        originalPrice:
+          type: number
+          nullable: true
+        discountPrice:
+          type: number
+          nullable: true
+        stockQuantity:
+          type: integer
+        lowStockThreshold:
+          type: integer
+        status:
+          type: string
+          enum: [available, out_of_stock, paused]
+        images:
+          type: string
+          nullable: true
+          description: JSON array of image URL strings
+        mainImageIndex:
+          type: integer
+        category:
+          type: string
+          nullable: true
+        brand:
+          type: string
+          nullable: true
+        itemType:
+          type: string
+          nullable: true
+        priceTier:
+          type: string
+          nullable: true
+        externalUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, name, stockQuantity, lowStockThreshold, status, mainImageIndex]
+
+    CreateProductInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        originalPrice:
+          type: string
+        discountPrice:
+          type: string
+        stockQuantity:
+          type: string
+        lowStockThreshold:
+          type: string
+        status:
+          type: string
+        mainImageIndex:
+          type: string
+        category:
+          type: string
+        brand:
+          type: string
+        itemType:
+          type: string
+        priceTier:
+          type: string
+        externalUrl:
+          type: string
+      required: [name]
+
+    UpdateProductInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        originalPrice:
+          type: string
+        discountPrice:
+          type: string
+        stockQuantity:
+          type: string
+        lowStockThreshold:
+          type: string
+        status:
+          type: string
+        mainImageIndex:
+          type: string
+        keepImages:
+          type: string
+        category:
+          type: string
+        brand:
+          type: string
+        itemType:
+          type: string
+        priceTier:
+          type: string
+        externalUrl:
+          type: string
+
+    StockAdjustInput:
+      type: object
+      properties:
+        quantityChange:
+          type: integer
+      required: [quantityChange]
+
+    # ── Order ─────────────────────────────────────────────────────────────────
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        fbUserId:
+          type: string
+        fbUserName:
+          type: string
+          nullable: true
+        fbProfileUrl:
+          type: string
+          nullable: true
+        productId:
+          type: integer
+          nullable: true
+        productName:
+          type: string
+          nullable: true
+        unitPrice:
+          type: number
+          nullable: true
+        quantity:
+          type: integer
+        totalPrice:
+          type: number
+          nullable: true
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, delivered]
+        note:
+          type: string
+          nullable: true
+        customerName:
+          type: string
+          nullable: true
+        customerPhone:
+          type: string
+          nullable: true
+        customerWilaya:
+          type: string
+          nullable: true
+        customerAddress:
+          type: string
+          nullable: true
+        source:
+          type: string
+          enum: [messenger, comment]
+        createdAt:
+          type: string
+      required: [id, fbUserId, quantity, status, source]
+
+    OrderCount:
+      type: object
+      properties:
+        pending:
+          type: integer
+        total:
+          type: integer
+      required: [pending, total]
+
+    BulkDeleteInput:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+      required: [ids]
+
+    BulkDeleteResult:
+      type: object
+      properties:
+        message:
+          type: string
+        deleted:
+          type: integer
+      required: [message, deleted]
+
+    UpdateOrderStatusInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, delivered]
+      required: [status]
+
+    # ── Conversation ──────────────────────────────────────────────────────────
+    ConversationSummary:
+      type: object
+      properties:
+        fbUserId:
+          type: string
+        fbUserName:
+          type: string
+          nullable: true
+        fbProfileUrl:
+          type: string
+          nullable: true
+        lastMessage:
+          type: string
+          nullable: true
+        lastSender:
+          type: string
+          nullable: true
+        lastTimestamp:
+          type: string
+          nullable: true
+        isPaused:
+          type: integer
+          nullable: true
+        sentiment:
+          type: string
+          nullable: true
+        label:
+          type: string
+          nullable: true
+      required: [fbUserId]
+
+    ConversationMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        fbUserId:
+          type: string
+        fbUserName:
+          type: string
+          nullable: true
+        fbProfileUrl:
+          type: string
+          nullable: true
+        message:
+          type: string
+        sender:
+          type: string
+          enum: [user, bot, admin]
+        timestamp:
+          type: string
+        isPaused:
+          type: integer
+        sentiment:
+          type: string
+          nullable: true
+        label:
+          type: string
+          nullable: true
+        salesTriggerType:
+          type: string
+          nullable: true
+        providerName:
+          type: string
+          nullable: true
+        modelName:
+          type: string
+          nullable: true
+        sourceType:
+          type: string
+          nullable: true
+      required: [id, fbUserId, message, sender, timestamp]
+
+    PauseResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        isPaused:
+          type: integer
+      required: [message, isPaused]
+
+    # ── Comment Log ───────────────────────────────────────────────────────────
+    CommentLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        postId:
+          type: string
+          nullable: true
+        commentId:
+          type: string
+          nullable: true
+        fbUserId:
+          type: string
+        fbUserName:
+          type: string
+          nullable: true
+        fbProfileUrl:
+          type: string
+          nullable: true
+        commentText:
+          type: string
+          nullable: true
+        aiReply:
+          type: string
+          nullable: true
+        dmSent:
+          type: integer
+        timestamp:
+          type: string
+      required: [id, fbUserId, dmSent, timestamp]
+
+    CommentStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        dmSent:
+          type: integer
+        today:
+          type: integer
+      required: [total, dmSent, today]
+
+    # ── FB Settings ───────────────────────────────────────────────────────────
+    FbSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+        pageAccessToken:
+          type: string
+          nullable: true
+        verifyToken:
+          type: string
+          nullable: true
+        pageId:
+          type: string
+          nullable: true
+        appSecret:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          nullable: true
+      required: [id]
+
+    SaveFbSettingsInput:
+      type: object
+      properties:
+        pageAccessToken:
+          type: string
+        verifyToken:
+          type: string
+        pageId:
+          type: string
+        appSecret:
+          type: string
+      required: [pageAccessToken, verifyToken, pageId]
+
+    FbTestResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        pageName:
+          type: string
+          nullable: true
+        pageId:
+          type: string
+          nullable: true
+        pageIdMismatch:
+          type: boolean
+        error:
+          type: string
+          nullable: true
+      required: [success]
+
+    # ── Appointments ──────────────────────────────────────────────────────────
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: integer
+        fbUserId:
+          type: string
+        fbUserName:
+          type: string
+          nullable: true
+        fbProfileUrl:
+          type: string
+          nullable: true
+        serviceName:
+          type: string
+          nullable: true
+        appointmentDate:
+          type: string
+          nullable: true
+        timeSlot:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+        note:
+          type: string
+          nullable: true
+        source:
+          type: string
+        createdAt:
+          type: string
+      required: [id, fbUserId, status, source]
+
+    AppointmentCount:
+      type: object
+      properties:
+        pending:
+          type: integer
+      required: [pending]
+
+    UpdateAppointmentInput:
+      type: object
+      properties:
+        status:
+          type: string
+        note:
+          type: string
+
+    # ── Slots ─────────────────────────────────────────────────────────────────
+    AvailableSlot:
+      type: object
+      properties:
+        id:
+          type: integer
+        dayOfWeek:
+          type: integer
+        timeSlot:
+          type: string
+        isActive:
+          type: integer
+        maxBookings:
+          type: integer
+      required: [id, dayOfWeek, timeSlot, isActive, maxBookings]
+
+    CreateSlotInput:
+      type: object
+      properties:
+        dayOfWeek:
+          type: integer
+        timeSlot:
+          type: string
+        maxBookings:
+          type: integer
+      required: [dayOfWeek, timeSlot]
+
+    UpdateSlotInput:
+      type: object
+      properties:
+        isActive:
+          type: integer
+        maxBookings:
+          type: integer
+
+    # ── FAQs ──────────────────────────────────────────────────────────────────
+    Faq:
+      type: object
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        answer:
+          type: string
+        category:
+          type: string
+          nullable: true
+        isActive:
+          type: integer
+        createdAt:
+          type: string
+      required: [id, question, answer, isActive]
+
+    CreateFaqInput:
+      type: object
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+        category:
+          type: string
+        isActive:
+          type: integer
+      required: [question, answer]
+
+    UpdateFaqInput:
+      type: object
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+        category:
+          type: string
+        isActive:
+          type: integer
+
+    SetLabelInput:
+      type: object
+      properties:
+        label:
+          type: string
+          nullable: true
+
+    SetSentimentInput:
+      type: object
+      properties:
+        sentiment:
+          type: string
+          nullable: true
+
+    ReplyInput:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    PausedCount:
+      type: object
+      required: [count]
+      properties:
+        count:
+          type: integer
+
+    # ── Broadcasts ────────────────────────────────────────────────────────────
+    Broadcast:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        messageText:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        targetFilter:
+          type: string
+        targetLabel:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [draft, sent, failed]
+        sentCount:
+          type: integer
+        totalRecipients:
+          type: integer
+        scheduledAt:
+          type: string
+          nullable: true
+        sentAt:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, title, messageText, targetFilter, status, sentCount, totalRecipients, createdAt]
+
+    CreateBroadcastInput:
+      type: object
+      properties:
+        title:
+          type: string
+        messageText:
+          type: string
+        imageUrl:
+          type: string
+        targetFilter:
+          type: string
+          enum: [all, appointments, label]
+        targetLabel:
+          type: string
+        scheduledAt:
+          type: string
+      required: [title, messageText]
+
+    UpdateBroadcastInput:
+      type: object
+      properties:
+        title:
+          type: string
+        messageText:
+          type: string
+        imageUrl:
+          type: string
+        targetFilter:
+          type: string
+          enum: [all, appointments, label]
+        targetLabel:
+          type: string
+        scheduledAt:
+          type: string
+
+    SendBroadcastResult:
+      type: object
+      properties:
+        message:
+          type: string
+        sentCount:
+          type: integer
+        totalRecipients:
+          type: integer
+        broadcast:
+          $ref: "#/components/schemas/Broadcast"
+      required: [message, sentCount, totalRecipients]
+
+    BroadcastStats:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        status:
+          type: string
+          enum: [draft, sent, failed]
+        sentCount:
+          type: integer
+        totalRecipients:
+          type: integer
+        sentAt:
+          type: string
+          nullable: true
+        deliveryRate:
+          type: integer
+          description: Percentage of recipients that received the message (0-100)
+      required: [id, title, status, sentCount, totalRecipients, deliveryRate]
+
+    # ── Leads ─────────────────────────────────────────────────────────────────
+    Lead:
+      type: object
+      properties:
+        id:
+          type: integer
+        fbUserId:
+          type: string
+        fbUserName:
+          type: string
+          nullable: true
+        fbProfileUrl:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        label:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        source:
+          type: string
+        lastInteractionAt:
+          type: string
+          nullable: true
+        totalMessages:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        latestOrderProduct:
+          type: string
+          nullable: true
+        latestOrderStatus:
+          type: string
+          nullable: true
+        latestOrderPrice:
+          type: number
+          nullable: true
+        latestOrderDate:
+          type: string
+          nullable: true
+      required: [id, fbUserId, label, source, totalMessages, createdAt, updatedAt]
+
+    CreateLeadInput:
+      type: object
+      properties:
+        fbUserId:
+          type: string
+        fbUserName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        label:
+          type: string
+        notes:
+          type: string
+        source:
+          type: string
+      required: [fbUserId]
+
+    UpdateLeadInput:
+      type: object
+      properties:
+        label:
+          type: string
+        notes:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        fbUserName:
+          type: string
+
+    # ── Subscription ──────────────────────────────────────────────────────────
+    SubscriptionPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        displayName:
+          type: string
+        priceDzd:
+          type: number
+        aiConversationsLimit:
+          type: integer
+        productsLimit:
+          type: integer
+        providersLimit:
+          type: integer
+        broadcastLimit:
+          type: integer
+        appointmentsEnabled:
+          type: integer
+        leadsEnabled:
+          type: integer
+        analyticsAdvanced:
+          type: integer
+        multiPage:
+          type: integer
+        isActive:
+          type: integer
+      required: [id, name, displayName, priceDzd, aiConversationsLimit, productsLimit, providersLimit, broadcastLimit, appointmentsEnabled, leadsEnabled, analyticsAdvanced, multiPage, isActive]
+
+    SubscriptionUsage:
+      type: object
+      properties:
+        id:
+          type: integer
+        monthYear:
+          type: string
+        aiConversationsUsed:
+          type: integer
+        broadcastSent:
+          type: integer
+        messagesLimitWarningSent:
+          type: integer
+        updatedAt:
+          type: string
+          nullable: true
+      required: [monthYear, aiConversationsUsed, broadcastSent]
+
+    CurrentSubscription:
+      type: object
+      properties:
+        plan:
+          $ref: "#/components/schemas/SubscriptionPlan"
+          nullable: true
+        usage:
+          $ref: "#/components/schemas/SubscriptionUsage"
+          nullable: true
+        monthYear:
+          type: string
+      required: [monthYear]
+
+    UpdateSubscriptionPlanInput:
+      type: object
+      properties:
+        plan:
+          type: string
+      required: [plan]
+
+    UpgradePlanResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        plan:
+          type: string
+          description: The new plan name that was activated
+      required: [message, plan]
+
+    # ── Domain Templates ──────────────────────────────────────────────────────
+    DomainTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+        domain:
+          type: string
+        templateName:
+          type: string
+        botName:
+          type: string
+        personality:
+          type: string
+        greetingMessage:
+          type: string
+        sampleFaqs:
+          type: string
+        sampleProducts:
+          type: string
+      required: [id, domain, templateName, botName, personality, greetingMessage, sampleFaqs, sampleProducts]
+
+    ApplyTemplateResult:
+      type: object
+      properties:
+        message:
+          type: string
+        faqsInserted:
+          type: integer
+        productsInserted:
+          type: integer
+      required: [message, faqsInserted, productsInserted]
